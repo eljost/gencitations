@@ -2,7 +2,7 @@
 Painless bibtex generator for ORCA logfiles.
 
 ## Building & Installation
-Requires poetry.
+Requires [poetry](https://python-poetry.org/docs/#installation).
 
 ```bash
 # Create wheel

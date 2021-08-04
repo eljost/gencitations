@@ -78,10 +78,12 @@ def parse_args(args):
     parser.add_argument("--bib_out", default="bibliography.bib",
         help="Output the bibliography to this file."
     )
-    # parser.add_argument("--cache", )
     parser.add_argument("--dois", default=None, type=str,
         help="YAML file to read the DOIs from."
     )
+    # parser.add_argument("--ris", action="store_true",
+        # help="Download citations in RIS format instead of bibtex."
+    # )
 
     return parser.parse_args(args)
 
