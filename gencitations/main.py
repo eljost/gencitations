@@ -25,8 +25,9 @@ def normalize_orca_keywords(keywords):
 
 
 def clean_keyword(kw):
+    kw_clean = kw.replace("+", "plus")
     keep_re = re.compile("[\W]")
-    kw_clean = keep_re.sub("", kw)
+    kw_clean = keep_re.sub("", kw_clean)
     return kw_clean
 
 
