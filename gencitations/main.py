@@ -14,6 +14,7 @@ cache = dc.Cache(directory=".")
 
 
 def parse_orca(text):
+    """Return keywords from ORCA logfile."""
     kwds_re = re.compile(r"\|  \d> !(.+)")
     kw_lines = kwds_re.findall(text)
     keywords = list(it.chain(*[kw_line.strip().split() for kw_line in kw_lines]))
@@ -21,6 +22,7 @@ def parse_orca(text):
 
 
 def normalize_orca_keywords(keywords):
+    """Remove leading/trailing whitespace and convert to lowercase."""
     keywords += ["orca"]
     keywords = [kw.strip().lower() for kw in keywords]
     keywords = set(keywords)  # Avoid duplicates
@@ -28,6 +30,7 @@ def normalize_orca_keywords(keywords):
 
 
 def clean_keyword(kw):
+    """Remove special characters."""
     repls = (("+", "plus"), ("*", "star"), ("-", "_"))
     for ptrn, sub in repls:
         kw = kw.replace(ptrn, sub)
@@ -37,6 +40,7 @@ def clean_keyword(kw):
 
 
 def dois_for_orca_kw(kw, dois_dict):
+    """Get document object identifiers for given keyword."""
     try:
         dois = dois_dict[kw]
     except KeyError:
@@ -47,6 +51,7 @@ def dois_for_orca_kw(kw, dois_dict):
 
 @cache.memoize()
 def bibtex_from_doi(doi):
+    """Fetch bibtex entry for given DOI from Crossref API. """
     tpl = "https://api.crossref.org/works/{doi}/transform/application/x-bibtex"
     rendered = tpl.format(doi=doi)
     try:
@@ -59,6 +64,7 @@ def bibtex_from_doi(doi):
 
 
 def prepend_bibtex_name(bibtex, prepend_name):
+    """Fix bibtex name."""
     name_re = re.compile(r"(\@[a-zA-Z]+\{)(.+?)(,.+)", re.DOTALL)
     sub = r"\g<1>{}\g<2>\g<3>".format(prepend_name)
     bibtex_ = name_re.sub(sub, bibtex)
