@@ -34,3 +34,7 @@ poetry install
 # gencitations can then be executed via
 poetry run gencitations [orca_log]
 ```
+
+## Contributing additional DOIs to dois.yaml
+(Additional) DOIs for (additional) keywords can easily be contributed by forking the
+repository, modifying the `dois.yaml` and opening a pull request [https://docs.github.com/en/github/collaborating-with-pull-requests/getting-started/about-collaborative-development-models](PR).
