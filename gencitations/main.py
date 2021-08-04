@@ -75,9 +75,13 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
 
     parser.add_argument("orca_log")
-    parser.add_argument("--bib_out", default="bibliography.bib")
-    parser.add_argument("--cache", )
-    parser.add_argument("--dois", default=None, type=str)
+    parser.add_argument("--bib_out", default="bibliography.bib",
+        help="Output the bibliography to this file."
+    )
+    # parser.add_argument("--cache", )
+    parser.add_argument("--dois", default=None, type=str,
+        help="YAML file to read the DOIs from."
+    )
 
     return parser.parse_args(args)
 
