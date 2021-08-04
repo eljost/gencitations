@@ -2,6 +2,8 @@
 Painless bibtex generator for ORCA logfiles.
 
 ## Building & Installation
+Requires poetry.
+
 ```bash
 # Create wheel
 poetry build
@@ -17,3 +19,6 @@ gencitations [orca_log]
 # E.g.
 gencitations tests/03_rimp2_jk_orca5.out
 ```
+
+## DOIs
+Currently DOIs are read from `dois.yaml` in the `gencitations/` subdirectory.

@@ -1,13 +1,16 @@
 import argparse
 import itertools as it
+import os
+from pathlib import Path
 import re
 import sys
 
 import diskcache as dc
 import requests
+import yaml
 
 
-cache = dc.Cache()
+cache = dc.Cache(directory=".")
 
 
 def parse_orca(text):
@@ -28,19 +31,14 @@ def clean_keyword(kw):
     repls = (("+", "plus"), ("*", "star"), ("-", "_"))
     for ptrn, sub in repls:
         kw = kw.replace(ptrn, sub)
-    keep_re = re.compile("[\W]")
+    keep_re = re.compile(r"[\W]")
     kw_clean = keep_re.sub("", kw)
     return kw_clean
 
 
-def dois_for_orca_kw(kw):
-    DOIS = {
-        "orca": ["10.1063/5.0004608"],
-        "ri-mp2": ["10.1080/00268976.2013.824624"],
-        "6-31g*" : ["10.1063/1.1674902", "10.1007/bf00533485", "10.1063/1.1677527"],
-    }
+def dois_for_orca_kw(kw, dois_dict):
     try:
-        dois = DOIS[kw]
+        dois = dois_dict[kw]
     except KeyError:
         print(f"No doi(s) for keyword '{kw}'")
         dois = []
@@ -53,6 +51,7 @@ def bibtex_from_doi(doi):
     rendered = tpl.format(doi=doi)
     try:
         resp = requests.get(rendered)
+        print(f"Performed API lookup at '{rendered}'")
     except requests.exceptions.RequestException as err:
         print(err)
         resp = None
@@ -72,6 +71,7 @@ def parse_args(args):
     parser.add_argument("orca_log")
     parser.add_argument("--bib_out", default="bibliography.bib")
     parser.add_argument("--cache", )
+    parser.add_argument("--dois", default=None, type=str)
 
     return parser.parse_args(args)
 
@@ -82,13 +82,22 @@ def run():
     with open(args.orca_log) as handle:
         text = handle.read()
 
+    this_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+    if args.dois is None:
+        dois_fn = this_dir / "dois.yaml"
+    else:
+        dois_fn = args.dois
+    with open(dois_fn) as handle:
+        doi_dict = yaml.load(handle.read(), Loader=yaml.SafeLoader)
+    print(f"Loaded DOIs for {len(doi_dict.keys())} keywords from '{dois_fn}'.")
+
     keywords = parse_orca(text)
     keywords = normalize_orca_keywords(keywords)
 
     all_bibtexs = list()
     ignored_kws = list()
     for kw in keywords:
-        dois = dois_for_orca_kw(kw)
+        dois = dois_for_orca_kw(kw, doi_dict)
         bibtexs = [
             bibtex
             for doi in dois
