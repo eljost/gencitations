@@ -23,3 +23,14 @@ gencitations tests/03_rimp2_jk_orca5.out
 Currently DOIs are read from `dois.yaml` in the `gencitations/` subdirectory. A different
 file, e.g., modified by the user can be specified to `gencitations` via the `--dois` argument
 on the command line. See `gencitations --help` for all possible commands.
+
+
+## Developing
+```bash
+git clone https://github.com/eljost/gencitations.git 
+cd gencitations
+poetry shell
+poetry install
+# gencitations can then be executed via
+poetry run gencitations [orca_log]
+```
