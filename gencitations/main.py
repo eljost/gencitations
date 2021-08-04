@@ -51,7 +51,7 @@ def dois_for_orca_kw(kw, dois_dict):
 
 @cache.memoize()
 def bibtex_from_doi(doi):
-    """Fetch bibtex entry for given DOI from Crossref API. """
+    """Fetch bibtex entry for given DOI from Crossref API."""
     tpl = "https://api.crossref.org/works/{doi}/transform/application/x-bibtex"
     rendered = tpl.format(doi=doi)
     try:
@@ -63,26 +63,31 @@ def bibtex_from_doi(doi):
     return resp.text
 
 
-def prepend_bibtex_name(bibtex, prepend_name):
+def update_bibtex_name(bibtex, prepend_name):
     """Fix bibtex name."""
     name_re = re.compile(r"(\@[a-zA-Z]+\{)(.+?)(,.+)", re.DOTALL)
-    sub = r"\g<1>{}\g<2>\g<3>".format(prepend_name)
+    mobj = name_re.match(bibtex)
+    org_name = mobj.groups()[1]
+    new_name = f"{prepend_name}{org_name}"
+    sub = r"\g<1>{}\g<3>".format(new_name)
     bibtex_ = name_re.sub(sub, bibtex)
-    return bibtex_
+    return bibtex_, new_name
 
 
 def parse_args(args):
     parser = argparse.ArgumentParser()
 
     parser.add_argument("orca_log")
-    parser.add_argument("--bib_out", default="bibliography.bib",
-        help="Output the bibliography to this file."
+    parser.add_argument(
+        "--bib_out",
+        default="bibliography.bib",
+        help="Output the bibliography to this file.",
     )
-    parser.add_argument("--dois", default=None, type=str,
-        help="YAML file to read the DOIs from."
+    parser.add_argument(
+        "--dois", default=None, type=str, help="YAML file to read the DOIs from."
     )
     # parser.add_argument("--ris", action="store_true",
-        # help="Download citations in RIS format instead of bibtex."
+    # help="Download citations in RIS format instead of bibtex."
     # )
 
     return parser.parse_args(args)
@@ -108,12 +113,11 @@ def run():
 
     all_bibtexs = list()
     ignored_kws = list()
+    kw_name_map = dict()
     for kw in keywords:
         dois = dois_for_orca_kw(kw, doi_dict)
         bibtexs = [
-            bibtex
-            for doi in dois
-            if (bibtex := bibtex_from_doi(doi)) is not None
+            bibtex for doi in dois if (bibtex := bibtex_from_doi(doi)) is not None
         ]
         if not bibtexs:
             ignored_kws.append(kw)
@@ -121,7 +125,8 @@ def run():
         kw_clean = clean_keyword(kw)
         for i, bibtex in enumerate(bibtexs):
             prepend_name = f"{kw_clean}_{i}_"
-            bibtex = prepend_bibtex_name(bibtex, prepend_name)
+            bibtex, new_name = update_bibtex_name(bibtex, prepend_name)
+            kw_name_map.setdefault(kw, list()).append(new_name)
             # Also prepend keyword as comment
             bibtex = f"%{kw}\n" + bibtex
             print(bibtex)
@@ -131,8 +136,11 @@ def run():
     with open(args.bib_out, "w") as handle:
         handle.write("\n\n".join(all_bibtexs))
 
-    print()
     print(f"Ignored keywords: {', '.join(ignored_kws)}")
+    print()
+    for kw, names in kw_name_map.items():
+        print(f"{kw: >24s}: \cite{{{','.join(names)}}}")
+    print()
     print(f"Wrote bibliography to '{args.bib_out}'")
 
 
