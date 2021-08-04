@@ -24,16 +24,10 @@ def normalize_orca_keywords(keywords):
     return keywords
 
 
-@cache.memoize()
-def bibtex_from_doi(doi):
-    tpl = "https://api.crossref.org/works/{doi}/transform/application/x-bibtex"
-    rendered = tpl.format(doi=doi)
-    try:
-        resp = requests.get(rendered)
-    except requests.exceptions.RequestException as err:
-        print(err)
-        resp = None
-    return resp.text
+def clean_keyword(kw):
+    keep_re = re.compile("[\W]")
+    kw_clean = keep_re.sub("", kw)
+    return kw_clean
 
 
 def dois_for_orca_kw(kw):
@@ -48,6 +42,25 @@ def dois_for_orca_kw(kw):
         print(f"No doi(s) for keyword '{kw}'")
         dois = []
     return dois
+
+
+@cache.memoize()
+def bibtex_from_doi(doi):
+    tpl = "https://api.crossref.org/works/{doi}/transform/application/x-bibtex"
+    rendered = tpl.format(doi=doi)
+    try:
+        resp = requests.get(rendered)
+    except requests.exceptions.RequestException as err:
+        print(err)
+        resp = None
+    return resp.text
+
+
+def prepend_bibtex_name(bibtex, prepend_name):
+    name_re = re.compile(r"(\@[a-zA-Z]+\{)(.+?)(,.+)", re.DOTALL)
+    sub = r"\g<1>{}\g<2>\g<3>".format(prepend_name)
+    bibtex_ = name_re.sub(sub, bibtex)
+    return bibtex_
 
 
 def parse_args(args):
@@ -76,20 +89,23 @@ def run():
             continue
         # Prepend keyword
         bibtexs = [
-            f"%{kw}\n" + bibtex
+            # f"%{kw}\n" + bibtex
+            bibtex
             for doi in dois
             if (bibtex := bibtex_from_doi(doi)) is not None
         ]
         if not bibtexs:
             continue
-        all_bibtexs.extend(bibtexs)
-        print(kw)
-        for bibtex in bibtexs:
+        kw_clean = clean_keyword(kw)
+        for i, bibtex in enumerate(bibtexs):
+            prepend_name = f"{kw_clean}_{i}_"
+            bibtex = prepend_bibtex_name(bibtex, prepend_name)
             print(bibtex)
             print()
+            all_bibtexs.append(bibtex)
 
     with open(args.bib_out, "w") as handle:
-        handle.write("\n\n".join(bibtexs))
+        handle.write("\n\n".join(all_bibtexs))
     print(f"Wrote bibliography to '{args.bib_out}'")
 
 
