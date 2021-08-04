@@ -25,9 +25,11 @@ def normalize_orca_keywords(keywords):
 
 
 def clean_keyword(kw):
-    kw_clean = kw.replace("+", "plus")
+    repls = (("+", "plus"), ("*", "star"), ("-", "_"))
+    for ptrn, sub in repls:
+        kw = kw.replace(ptrn, sub)
     keep_re = re.compile("[\W]")
-    kw_clean = keep_re.sub("", kw_clean)
+    kw_clean = keep_re.sub("", kw)
     return kw_clean
 
 
@@ -84,29 +86,32 @@ def run():
     keywords = normalize_orca_keywords(keywords)
 
     all_bibtexs = list()
+    ignored_kws = list()
     for kw in keywords:
         dois = dois_for_orca_kw(kw)
-        if not dois:
-            continue
-        # Prepend keyword
         bibtexs = [
-            # f"%{kw}\n" + bibtex
             bibtex
             for doi in dois
             if (bibtex := bibtex_from_doi(doi)) is not None
         ]
         if not bibtexs:
+            ignored_kws.append(kw)
             continue
         kw_clean = clean_keyword(kw)
         for i, bibtex in enumerate(bibtexs):
             prepend_name = f"{kw_clean}_{i}_"
             bibtex = prepend_bibtex_name(bibtex, prepend_name)
+            # Also prepend keyword as comment
+            bibtex = f"%{kw}\n" + bibtex
             print(bibtex)
             print()
             all_bibtexs.append(bibtex)
 
     with open(args.bib_out, "w") as handle:
         handle.write("\n\n".join(all_bibtexs))
+
+    print()
+    print(f"Ignored keywords: {', '.join(ignored_kws)}")
     print(f"Wrote bibliography to '{args.bib_out}'")
 
 
